@@ -1188,12 +1188,13 @@ export const addAreaItem = async (req, res) => {
     const area = straging.areas.find(a => a.areaId === areaId || a._id.toString() === areaId);
     if (!area) return errorResponse(res, "Area not found", 404);
 
-    const libraryItem = straging.items.find(i => i.itemId === itemId);
+    // Allow finding by either the custom itemId OR the MongoDB _id
+    const libraryItem = straging.items.find(i => i.itemId === itemId || i._id.toString() === itemId);
     if (!libraryItem) return errorResponse(res, "Item not found in library", 404);
 
     const newAreaItem = {
       instanceId: `inst_${Date.now()}_${Math.random().toString(36).slice(2)}`,
-      itemId: itemId,
+      itemId: libraryItem.itemId, // Always use the custom itemId for consistency
       x: x || 0,
       y: y || 0,
       rotation: rotation || 0,
