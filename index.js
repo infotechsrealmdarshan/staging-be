@@ -1,5 +1,5 @@
+import "dotenv/config";
 import express from "express";
-import dotenv from "dotenv";
 import morgan from "morgan";
 import cors from "cors";
 import helmet from "helmet";
@@ -11,7 +11,7 @@ import connectDB from "./src/config/db.js";
 import { swaggerDocs } from "./src/swagger/swagger.js";
 import { globalErrorHandler } from "./src/utils/errorHandler.js";
 
-dotenv.config();
+// dotenv.config(); // Loaded via import "dotenv/config"
 
 // Create Express app
 const app = express();

@@ -1,9 +1,12 @@
-import Redis from 'ioredis';
 import { Redis as UpstashRedis } from '@upstash/redis';
+// import Redis from 'ioredis'; // Local Redis disabled
 
 let redisClient;
 
-// Check for Upstash REST URL/Token first
+console.log('Initializing Redis Client...');
+// console.log('UPSTASH_URL:', process.env.UPSTASH_REDIS_REST_URL); // Debug log (be careful with secrets)
+
+// Force Upstash Redis usage
 if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
   console.log('Using Upstash Redis (HTTP)');
   const upstash = new UpstashRedis({
@@ -32,7 +35,12 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
     // ...upstash
   };
 } else {
-  // Existing IORedis implementation
+  // If credentials are missing, we should probably throw an error or handle it gracefully
+  // ensuring we don't fall back to local if not desired.
+  console.error("CRITICAL: Upstash Redis credentials (UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN) are missing from environment variables!");
+
+  // Fallback (Commented out as requested)
+  /*
   redisClient = process.env.REDIS_URL
     ? new Redis(process.env.REDIS_URL)
     : new Redis({
@@ -52,6 +60,7 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
   redisClient.on('connect', () => {
     console.log('Redis Client Connected');
   });
+  */
 }
 
 export default redisClient;
