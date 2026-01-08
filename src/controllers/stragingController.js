@@ -1127,6 +1127,8 @@ export const deleteAreaAndHotspot = async (req, res) => {
 export const addProjectItem = async (req, res) => {
   try {
     const { id } = req.params;
+    const { areaId, x, y, rotation } = req.body;
+
     if (!req.file) return errorResponse(res, "Image is required", 400);
 
     const straging = await Straging.findOne({ _id: id, createdBy: req.user.id });
@@ -1142,9 +1144,31 @@ export const addProjectItem = async (req, res) => {
 
     straging.items = straging.items || [];
     straging.items.push(newItem);
+
+    // Automatic placement if areaId is provided
+    let placedItem = null;
+    if (areaId) {
+      const area = straging.areas.find(a => a.areaId === areaId || a._id.toString() === areaId);
+      if (area) {
+        placedItem = {
+          instanceId: `inst_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+          itemId: newItem.itemId,
+          x: x ? parseFloat(x) : 0,
+          y: y ? parseFloat(y) : 0,
+          rotation: rotation ? parseFloat(rotation) : 0,
+          imageUrl: newItem.imageUrl
+        };
+        area.items = area.items || [];
+        area.items.push(placedItem);
+      }
+    }
+
     await straging.save();
 
-    return successResponse(res, "Item added to library successfully", newItem);
+    return successResponse(res, "Item added to library successfully", {
+      ...newItem,
+      placedInArea: placedItem
+    });
   } catch (error) {
     return errorResponse(res, "Error adding item to library", 500);
   }
