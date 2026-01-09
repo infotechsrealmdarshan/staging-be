@@ -1285,19 +1285,29 @@ export const deleteProjectItem = async (req, res) => {
     const straging = await Straging.findOne({ _id: id, createdBy: req.user.id });
     if (!straging) return errorResponse(res, "Straging project not found", 404);
 
-    // Remove from library
-    straging.items = straging.items.filter(i =>
-      i.itemId !== itemId &&
-      (i._id ? i._id.toString() !== itemId : true)
+    // 1. Find the item in the library first to get its custom itemId (the string one)
+    const itemToDelete = straging.items.find(i =>
+      i.itemId === itemId ||
+      (i._id && i._id.toString() === itemId)
     );
 
-    // Remove from all areas
+    if (!itemToDelete) {
+      return errorResponse(res, "Item not found in project library", 404);
+    }
+
+    const customItemIdString = itemToDelete.itemId;
+
+    // 2. Remove from library array
+    straging.items = straging.items.filter(i => i.itemId !== customItemIdString);
+
+    // 3. Remove from all areas (searching by the custom itemId string)
     straging.areas.forEach(area => {
-      area.items = (area.items || []).filter(ai =>
-        ai.itemId !== itemId &&
-        (ai._id ? ai._id.toString() !== itemId : true)
-      );
+      area.items = (area.items || []).filter(ai => ai.itemId !== customItemIdString);
     });
+
+    // 4. Force Mongoose to recognize the changes in subdocument arrays
+    straging.markModified("items");
+    straging.markModified("areas");
 
     await straging.save();
     return successResponse(res, "Item deleted from project and all areas successfully");
@@ -1321,6 +1331,9 @@ export const deleteAreaItem = async (req, res) => {
       ai.instanceId !== instanceId &&
       (ai._id ? ai._id.toString() !== instanceId : true)
     );
+
+    // Ensure Mongoose detects the change in the nested array
+    straging.markModified("areas");
     await straging.save();
 
     return successResponse(res, "Item deleted from area successfully");
