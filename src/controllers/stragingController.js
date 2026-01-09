@@ -169,7 +169,7 @@ export const publicViewAll = async (req, res) => {
     const query = search ? { projectName: { $regex: search, $options: "i" } } : {};
 
     const stragingProjects = await Straging.find(query)
-      .select("projectName streetAddress cityLocality state country images createdAt info hotspots areas items")
+      .select("projectName streetAddress cityLocality state country images createdAt updatedAt createdBy info hotspots areas items")
       .sort({ createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);
@@ -220,7 +220,8 @@ export const publicViewAll = async (req, res) => {
           note: straging.note,
           items: straging.items || [],
           createdAt: straging.createdAt,
-          updatedAt: straging.updatedAt
+          updatedAt: straging.updatedAt,
+          createdBy: straging.createdBy
         },
         areas: areasWithData
       };
@@ -244,7 +245,7 @@ export const publicGetById = async (req, res) => {
   try {
     const { id } = req.params;
     const straging = await Straging.findById(id)
-      .select("projectName streetAddress cityLocality state country images note createdAt info hotspots areas items");
+      .select("projectName streetAddress cityLocality state country images note createdAt updatedAt createdBy info hotspots areas items");
 
     if (!straging) {
       return errorResponse(res, "Straging project not found", 404);
@@ -276,7 +277,8 @@ export const publicGetById = async (req, res) => {
         note: straging.note,
         items: straging.items || [],
         createdAt: straging.createdAt,
-        updatedAt: straging.updatedAt
+        updatedAt: straging.updatedAt,
+        createdBy: straging.createdBy
       },
       areas: areasWithData
     });
