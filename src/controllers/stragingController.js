@@ -256,7 +256,7 @@ export const publicGetById = async (req, res) => {
       return {
         ...area.toObject(),
         hotspots: straging.hotspots.filter(
-          h => h.parentAreaId === area.areaId
+          h => h.parentAreaId === area._id.toString()
         ),
         info: straging.info.filter(
           i => i.areaId === area._id.toString()
