@@ -990,6 +990,14 @@ router.delete("/:id/delete-area-hotspot", auth, deleteAreaAndHotspot);
  *                 type: number
  *                 description: "Initial height of the item"
  *                 example: 200
+ *               flipX:
+ *                 type: boolean
+ *                 description: "Horizontal flip"
+ *                 example: false
+ *               flipY:
+ *                 type: boolean
+ *                 description: "Vertical flip"
+ *                 example: false
  *     responses:
  *       200:
  *         description: Item added successfully
@@ -1048,6 +1056,14 @@ router.post("/:id/items", auth, upload.single("image"), addProjectItem);
  *                 type: number
  *                 description: Height of the item instance
  *                 example: 200
+ *               flipX:
+ *                 type: boolean
+ *                 description: Horizontal flip
+ *                 example: false
+ *               flipY:
+ *                 type: boolean
+ *                 description: Vertical flip
+ *                 example: false
  *     responses:
  *       200:
  *         description: Item placed successfully
@@ -1158,6 +1174,10 @@ router.delete("/:id/areas/:areaId/items/:instanceId", auth, deleteAreaItem);
  *                 type: number
  *               height:
  *                 type: number
+ *               flipX:
+ *                 type: boolean
+ *               flipY:
+ *                 type: boolean
  *     responses:
  *       200:
  *         description: Item instance updated successfully

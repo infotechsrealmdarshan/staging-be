@@ -9,6 +9,8 @@ const areaItemSchema = new mongoose.Schema(
     rotation: { type: Number, default: 0 }, // Rotation in degrees
     width: { type: Number, default: 0 },
     height: { type: Number, default: 0 },
+    flipX: { type: Boolean, default: false },
+    flipY: { type: Boolean, default: false },
     imageUrl: { type: String }, // Cache image URL for easy access
   },
   { _id: true, timestamps: true }

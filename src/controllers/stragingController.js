@@ -458,7 +458,11 @@ export const deleteArea = async (req, res) => {
       return errorResponse(res, "Straging project not found or unauthorized", 404);
     }
 
-    const areaIndex = straging.areas.findIndex(area => area.id === areaId);
+    const areaIndex = straging.areas.findIndex(area =>
+      area.areaId === areaId ||
+      area._id.toString() === areaId ||
+      area.id === areaId
+    );
     if (areaIndex === -1) {
       return errorResponse(res, "Area not found", 404);
     }
@@ -1071,13 +1075,22 @@ export const deleteAreaAndHotspot = async (req, res) => {
 
     // If areaId is provided, find and delete the area and its associated hotspot
     if (areaId) {
-      const areaIndex = straging.areas.findIndex(area => area.id === areaId);
+      const areaIndex = straging.areas.findIndex(area =>
+        area.areaId === areaId ||
+        area._id.toString() === areaId ||
+        area.id === areaId
+      );
       if (areaIndex !== -1) {
         deletedArea = straging.areas[areaIndex];
 
         // Find and delete the associated hotspot
-        if (deletedArea.hotspotId) {
-          const hotspotIndex = straging.hotspots.findIndex(hotspot => hotspot.id === deletedArea.hotspotId);
+        if (deletedArea.hotspotId || deletedArea.areaId) {
+          const areaIdToMatch = deletedArea.areaId;
+          const hotspotIndex = straging.hotspots.findIndex(hotspot =>
+            hotspot.hotspotId === deletedArea.hotspotId ||
+            (hotspot._id && hotspot._id.toString() === deletedArea.hotspotId) ||
+            hotspot.childAreaId === areaIdToMatch
+          );
           if (hotspotIndex !== -1) {
             deletedHotspot = straging.hotspots[hotspotIndex];
             straging.hotspots.splice(hotspotIndex, 1);
@@ -1090,13 +1103,22 @@ export const deleteAreaAndHotspot = async (req, res) => {
 
     // If hotspotId is provided, find and delete the hotspot and its associated area
     if (hotspotId) {
-      const hotspotIndex = straging.hotspots.findIndex(hotspot => hotspot.id === hotspotId);
+      const hotspotIndex = straging.hotspots.findIndex(hotspot =>
+        hotspot.hotspotId === hotspotId ||
+        hotspot._id.toString() === hotspotId ||
+        hotspot.id === hotspotId
+      );
       if (hotspotIndex !== -1) {
         deletedHotspot = straging.hotspots[hotspotIndex];
 
         // Find and delete the associated area
-        if (deletedHotspot.areaId) {
-          const areaIndex = straging.areas.findIndex(area => area.id === deletedHotspot.areaId);
+        const targetAreaId = deletedHotspot.childAreaId || deletedHotspot.areaId;
+        if (targetAreaId) {
+          const areaIndex = straging.areas.findIndex(area =>
+            area.areaId === targetAreaId ||
+            (area._id && area._id.toString() === targetAreaId) ||
+            area.id === targetAreaId
+          );
           if (areaIndex !== -1) {
             deletedArea = straging.areas[areaIndex];
             straging.areas.splice(areaIndex, 1);
@@ -1127,7 +1149,7 @@ export const deleteAreaAndHotspot = async (req, res) => {
 export const addProjectItem = async (req, res) => {
   try {
     const { id } = req.params;
-    const { areaId, x, y, rotation, width, height } = req.body;
+    const { areaId, x, y, rotation, width, height, flipX, flipY } = req.body;
 
     if (!req.file) return errorResponse(res, "Image is required", 400);
 
@@ -1158,8 +1180,10 @@ export const addProjectItem = async (req, res) => {
           x: x ? parseFloat(x) : 0,
           y: y ? parseFloat(y) : 0,
           rotation: rotation ? parseFloat(rotation) : 0,
-          width: width ? parseFloat(width) : (newItem.width || 0),
-          height: height ? parseFloat(height) : (newItem.height || 0),
+          width: width ? parseFloat(width) : newItem.width,
+          height: height ? parseFloat(height) : newItem.height,
+          flipX: flipX === "true" || flipX === true,
+          flipY: flipY === "true" || flipY === true,
           imageUrl: newItem.imageUrl
         };
         area.items = area.items || [];
@@ -1182,7 +1206,7 @@ export const addProjectItem = async (req, res) => {
 export const addAreaItem = async (req, res) => {
   try {
     const { id, areaId } = req.params;
-    const { itemId, x, y, rotation, width, height } = req.body;
+    const { itemId, x, y, rotation, width, height, flipX, flipY } = req.body;
 
     if (!itemId) return errorResponse(res, "itemId is required", 400);
 
@@ -1202,8 +1226,10 @@ export const addAreaItem = async (req, res) => {
       x: x || 0,
       y: y || 0,
       rotation: rotation || 0,
-      width: width || libraryItem.width || 0,
-      height: height || libraryItem.height || 0,
+      width: width !== undefined ? width : (libraryItem.width || 0),
+      height: height !== undefined ? height : (libraryItem.height || 0),
+      flipX: flipX === "true" || flipX === true,
+      flipY: flipY === "true" || flipY === true,
       imageUrl: libraryItem.imageUrl
     };
 
@@ -1221,7 +1247,7 @@ export const addAreaItem = async (req, res) => {
 export const updateAreaItem = async (req, res) => {
   try {
     const { id, areaId, instanceId } = req.params;
-    const { x, y, rotation, width, height } = req.body;
+    const { x, y, rotation, width, height, flipX, flipY } = req.body;
 
     const straging = await Straging.findOne({ _id: id, createdBy: req.user.id });
     if (!straging) return errorResponse(res, "Straging project not found", 404);
@@ -1229,14 +1255,19 @@ export const updateAreaItem = async (req, res) => {
     const area = straging.areas.find(a => a.areaId === areaId || a._id.toString() === areaId);
     if (!area) return errorResponse(res, "Area not found", 404);
 
-    const areaItem = area.items.find(ai => ai.instanceId === instanceId);
+    const areaItem = area.items.find(ai =>
+      ai.instanceId === instanceId ||
+      (ai._id && ai._id.toString() === instanceId)
+    );
     if (!areaItem) return errorResponse(res, "Item instance not found in area", 404);
 
     if (x !== undefined) areaItem.x = parseFloat(x);
     if (y !== undefined) areaItem.y = parseFloat(y);
     if (rotation !== undefined) areaItem.rotation = parseFloat(rotation);
-    if (width !== undefined) areaItem.width = parseFloat(width);
-    if (height !== undefined) areaItem.height = parseFloat(height);
+    if (width !== undefined) areaItem.width = width === "" ? 0 : parseFloat(width);
+    if (height !== undefined) areaItem.height = height === "" ? 0 : parseFloat(height);
+    if (flipX !== undefined) areaItem.flipX = flipX === "true" || flipX === true;
+    if (flipY !== undefined) areaItem.flipY = flipY === "true" || flipY === true;
 
     await straging.save();
 
@@ -1255,11 +1286,17 @@ export const deleteProjectItem = async (req, res) => {
     if (!straging) return errorResponse(res, "Straging project not found", 404);
 
     // Remove from library
-    straging.items = straging.items.filter(i => i.itemId !== itemId);
+    straging.items = straging.items.filter(i =>
+      i.itemId !== itemId &&
+      (i._id ? i._id.toString() !== itemId : true)
+    );
 
     // Remove from all areas
     straging.areas.forEach(area => {
-      area.items = (area.items || []).filter(ai => ai.itemId !== itemId);
+      area.items = (area.items || []).filter(ai =>
+        ai.itemId !== itemId &&
+        (ai._id ? ai._id.toString() !== itemId : true)
+      );
     });
 
     await straging.save();
@@ -1280,7 +1317,10 @@ export const deleteAreaItem = async (req, res) => {
     const area = straging.areas.find(a => a.areaId === areaId || a._id.toString() === areaId);
     if (!area) return errorResponse(res, "Area not found", 404);
 
-    area.items = (area.items || []).filter(ai => ai.instanceId !== instanceId);
+    area.items = (area.items || []).filter(ai =>
+      ai.instanceId !== instanceId &&
+      (ai._id ? ai._id.toString() !== instanceId : true)
+    );
     await straging.save();
 
     return successResponse(res, "Item deleted from area successfully");
