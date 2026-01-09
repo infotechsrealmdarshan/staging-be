@@ -1127,7 +1127,7 @@ export const deleteAreaAndHotspot = async (req, res) => {
 export const addProjectItem = async (req, res) => {
   try {
     const { id } = req.params;
-    const { areaId, x, y, rotation } = req.body;
+    const { areaId, x, y, rotation, width, height } = req.body;
 
     if (!req.file) return errorResponse(res, "Image is required", 400);
 
@@ -1140,6 +1140,8 @@ export const addProjectItem = async (req, res) => {
       imagePublicId: req.file.filename || req.file.public_id,
       imageName: req.file.originalname,
       imageType: req.file.mimetype.split("/")[1] || "jpg",
+      width: width ? parseFloat(width) : 0,
+      height: height ? parseFloat(height) : 0,
     };
 
     straging.items = straging.items || [];
@@ -1156,6 +1158,8 @@ export const addProjectItem = async (req, res) => {
           x: x ? parseFloat(x) : 0,
           y: y ? parseFloat(y) : 0,
           rotation: rotation ? parseFloat(rotation) : 0,
+          width: width ? parseFloat(width) : (newItem.width || 0),
+          height: height ? parseFloat(height) : (newItem.height || 0),
           imageUrl: newItem.imageUrl
         };
         area.items = area.items || [];
@@ -1178,7 +1182,7 @@ export const addProjectItem = async (req, res) => {
 export const addAreaItem = async (req, res) => {
   try {
     const { id, areaId } = req.params;
-    const { itemId, x, y, rotation } = req.body;
+    const { itemId, x, y, rotation, width, height } = req.body;
 
     if (!itemId) return errorResponse(res, "itemId is required", 400);
 
@@ -1198,6 +1202,8 @@ export const addAreaItem = async (req, res) => {
       x: x || 0,
       y: y || 0,
       rotation: rotation || 0,
+      width: width || libraryItem.width || 0,
+      height: height || libraryItem.height || 0,
       imageUrl: libraryItem.imageUrl
     };
 
@@ -1208,6 +1214,35 @@ export const addAreaItem = async (req, res) => {
     return successResponse(res, "Item added to area successfully", newAreaItem);
   } catch (error) {
     return errorResponse(res, "Error adding item to area", 500);
+  }
+};
+
+// Update item in specific area
+export const updateAreaItem = async (req, res) => {
+  try {
+    const { id, areaId, instanceId } = req.params;
+    const { x, y, rotation, width, height } = req.body;
+
+    const straging = await Straging.findOne({ _id: id, createdBy: req.user.id });
+    if (!straging) return errorResponse(res, "Straging project not found", 404);
+
+    const area = straging.areas.find(a => a.areaId === areaId || a._id.toString() === areaId);
+    if (!area) return errorResponse(res, "Area not found", 404);
+
+    const areaItem = area.items.find(ai => ai.instanceId === instanceId);
+    if (!areaItem) return errorResponse(res, "Item instance not found in area", 404);
+
+    if (x !== undefined) areaItem.x = parseFloat(x);
+    if (y !== undefined) areaItem.y = parseFloat(y);
+    if (rotation !== undefined) areaItem.rotation = parseFloat(rotation);
+    if (width !== undefined) areaItem.width = parseFloat(width);
+    if (height !== undefined) areaItem.height = parseFloat(height);
+
+    await straging.save();
+
+    return successResponse(res, "Area item updated successfully", areaItem);
+  } catch (error) {
+    return errorResponse(res, "Error updating item in area", 500);
   }
 };
 

@@ -23,6 +23,7 @@ import {
   addAreaItem,
   deleteProjectItem,
   deleteAreaItem,
+  updateAreaItem,
 } from "../controllers/stragingController.js";
 import auth from "../middlewares/auth.js";
 import { adminAuth } from "../middlewares/adminAuth.js";
@@ -981,6 +982,14 @@ router.delete("/:id/delete-area-hotspot", auth, deleteAreaAndHotspot);
  *                 type: string
  *                 format: binary
  *                 description: "Item image file (required)"
+ *               width:
+ *                 type: number
+ *                 description: "Initial width of the item"
+ *                 example: 300
+ *               height:
+ *                 type: number
+ *                 description: "Initial height of the item"
+ *                 example: 200
  *     responses:
  *       200:
  *         description: Item added successfully
@@ -1031,6 +1040,14 @@ router.post("/:id/items", auth, upload.single("image"), addProjectItem);
  *                 type: number
  *                 description: Rotation in degrees
  *                 example: 90
+ *               width:
+ *                 type: number
+ *                 description: Width of the item instance
+ *                 example: 300
+ *               height:
+ *                 type: number
+ *                 description: Height of the item instance
+ *                 example: 200
  *     responses:
  *       200:
  *         description: Item placed successfully
@@ -1099,5 +1116,54 @@ router.delete("/:id/items/:itemId", auth, deleteProjectItem);
  *         description: Straging project or area not found
  */
 router.delete("/:id/areas/:areaId/items/:instanceId", auth, deleteAreaItem);
+
+/**
+ * @swagger
+ * /api/straging/{id}/areas/{areaId}/items/{instanceId}:
+ *   put:
+ *     summary: Update specific item instance in an area
+ *     tags: [Straging Items]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: areaId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: instanceId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               x:
+ *                 type: number
+ *               y:
+ *                 type: number
+ *               rotation:
+ *                 type: number
+ *               width:
+ *                 type: number
+ *               height:
+ *                 type: number
+ *     responses:
+ *       200:
+ *         description: Item instance updated successfully
+ *       404:
+ *         description: Straging project, area or item instance not found
+ */
+router.put("/:id/areas/:areaId/items/:instanceId", auth, updateAreaItem);
 
 export default router;

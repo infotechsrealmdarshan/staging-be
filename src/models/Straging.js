@@ -7,6 +7,8 @@ const areaItemSchema = new mongoose.Schema(
     x: { type: Number, default: 0 },
     y: { type: Number, default: 0 },
     rotation: { type: Number, default: 0 }, // Rotation in degrees
+    width: { type: Number, default: 0 },
+    height: { type: Number, default: 0 },
     imageUrl: { type: String }, // Cache image URL for easy access
   },
   { _id: true, timestamps: true }
@@ -33,6 +35,8 @@ const itemSchema = new mongoose.Schema(
     imagePublicId: { type: String },
     imageName: { type: String },
     imageType: { type: String },
+    width: { type: Number, default: 0 },
+    height: { type: Number, default: 0 },
   },
   { _id: true, timestamps: true }
 );
