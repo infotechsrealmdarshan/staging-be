@@ -1,4 +1,5 @@
 import User from "../models/User.js";
+import Straging from "../models/Straging.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { successResponse, errorResponse } from "../utils/response.js";
@@ -149,7 +150,7 @@ export const googleSignin = async (req, res) => {
 
     // Check if user exists in MongoDB
     let user = await User.findOne({ firebaseUid: uid });
-    
+
     if (!user) {
       // Create new user if doesn't exist
       user = new User({
@@ -260,14 +261,14 @@ export const updateProfile = async (req, res) => {
 export const deleteOwnAccount = async (req, res) => {
   try {
     const user = await User.findByIdAndUpdate(
-      req.user.id, 
-      { 
-        isDeleted: true, 
-        deletedAt: new Date() 
+      req.user.id,
+      {
+        isDeleted: true,
+        deletedAt: new Date()
       },
       { new: true }
     ).select("-password");
-    
+
     if (!user)
       return successResponse(res, "User not found", null, null, 200, 0);
 
@@ -297,7 +298,7 @@ export const getAllUsers = async (req, res) => {
 
     // Build search query
     let searchQuery = { isDeleted: { $ne: true } };
-    
+
     if (search && search.trim()) {
       const searchTerm = search.trim();
       searchQuery.$or = [
@@ -347,14 +348,16 @@ export const getAllUsers = async (req, res) => {
 /* ---------------- Admin: Get Single User ---------------- */
 export const getUserById = async (req, res) => {
   try {
-    const user = await User.findOne({ 
-      _id: req.params.id, 
-      isDeleted: { $ne: true } 
+    const user = await User.findOne({
+      _id: req.params.id,
+      isDeleted: { $ne: true }
     }).select("-password");
     if (!user)
       return successResponse(res, "User not found", null, null, 200, 0);
 
-    return successResponse(res, "User details fetched successfully", { user }, null, 200, 1);
+    const straging = await Straging.find({ createdBy: user._id });
+
+    return successResponse(res, "User details fetched successfully", { user, straging }, null, 200, 1);
   } catch (err) {
     return errorResponse(res, err.message || "Server error", 500);
   }
@@ -395,13 +398,13 @@ export const bulkDeleteUsers = async (req, res) => {
 
     // Soft delete users
     const deleteResult = await User.updateMany(
-      { 
+      {
         _id: { $in: existingUserIds },
         isDeleted: { $ne: true }
       },
-      { 
-        isDeleted: true, 
-        deletedAt: new Date() 
+      {
+        isDeleted: true,
+        deletedAt: new Date()
       }
     );
 
@@ -428,13 +431,13 @@ export const deleteUserById = async (req, res) => {
   try {
     const user = await User.findByIdAndUpdate(
       req.params.id,
-      { 
-        isDeleted: true, 
-        deletedAt: new Date() 
+      {
+        isDeleted: true,
+        deletedAt: new Date()
       },
       { new: true }
     ).select("-password");
-    
+
     if (!user)
       return successResponse(res, "User not found", null, null, 200, 0);
 
@@ -451,13 +454,13 @@ export const restoreUserById = async (req, res) => {
   try {
     const user = await User.findByIdAndUpdate(
       req.params.id,
-      { 
-        isDeleted: false, 
-        deletedAt: null 
+      {
+        isDeleted: false,
+        deletedAt: null
       },
       { new: true }
     ).select("-password");
-    
+
     if (!user)
       return successResponse(res, "User not found", null, null, 200, 0);
 
